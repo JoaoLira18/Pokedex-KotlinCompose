@@ -13,7 +13,7 @@ data class Pokemon(
     val cries: Cries,
     val name: String,
     val sprites: Sprite,
-    val species: Species,
+    val species: SpeciesUrl,
     val moves: List<Moves>,
     val forms: List<Form>,
     val stats: List<Stats>,
@@ -95,7 +95,7 @@ data class Form(
 ) : Parcelable
 
 @Parcelize
-data class Species(
+data class SpeciesUrl(
     val url: String,
     val name: String,
 ) : Parcelable

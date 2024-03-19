@@ -3,11 +3,15 @@ package com.example.kotlinpokedex.ui.screens.home
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -55,6 +59,7 @@ import com.example.kotlinpokedex.data.models.OfficialArtwork
 import com.example.kotlinpokedex.data.models.Other
 import com.example.kotlinpokedex.data.models.Pokemon
 import com.example.kotlinpokedex.data.models.Species
+import com.example.kotlinpokedex.data.models.SpeciesUrl
 import com.example.kotlinpokedex.data.models.Sprite
 import com.example.kotlinpokedex.data.models.StatsDetail
 import com.example.kotlinpokedex.data.models.Stats
@@ -63,39 +68,53 @@ import com.example.kotlinpokedex.data.models.TypeDetail
 import com.example.kotlinpokedex.navigation.Screens
 import com.example.kotlinpokedex.ui.theme.KotlinPokedexTheme
 import com.example.kotlinpokedex.utils.DevicesPreview
+import com.example.kotlinpokedex.utils.PokemonTypeTag
 import com.example.kotlinpokedex.utils.typePokemonColorHandler
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
-    navController: NavHostController,
-    viewModel: HomeScreenViewModel
+    navController: NavHostController, viewModel: HomeScreenViewModel
 ) {
     val pokemonState by viewModel.pokemons.collectAsState()
     val scope = rememberCoroutineScope()
+    val homeState by viewModel.homeState.collectAsState()
 
     LaunchedEffect(Unit) {
         scope.launch {
-            viewModel.getPokemonUrlList()
+            viewModel.getNextPokemonsList()
         }
     }
 
-    HomeScreenUI(navController, pokemonState)
+    @Composable
+    fun getNextPokemons() {
+        LaunchedEffect(Unit) {
+            scope.launch {
+                delay(2000)
+                viewModel.getNextPokemonsList()
+            }
+        }
+    }
+
+    HomeScreenUI(navController, pokemonState, homeState) {
+        getNextPokemons()
+    }
 }
 
 @Composable
 fun HomeScreenUI(
     navController: NavHostController,
-    pokemonState: ResponseResource<List<Pokemon>>
+    pokemonState: ResponseResource<List<Pokemon>>,
+    homeState: HomeState,
+    getNextPokemons: @Composable () -> Unit
 ) {
     Scaffold(
         topBar = {
             Header()
-        },
-        modifier = Modifier
-            .background(
-                MaterialTheme.colorScheme.background
-            )
+        }, modifier = Modifier.background(
+            MaterialTheme.colorScheme.background
+        )
     ) { innerPadding ->
         when (pokemonState) {
             is ResponseResource.Loading -> {
@@ -115,16 +134,17 @@ fun HomeScreenUI(
 
             is ResponseResource.Success -> {
                 val pokemons = pokemonState.data
-                Column(
-                    modifier = Modifier
-                        .padding(innerPadding)
+                Box(
+                    modifier = Modifier.padding(innerPadding)
                 ) {
-                    PokemonLazyGrid(navController, pokemons)
+                    PokemonLazyGrid(navController, pokemons, homeState) {
+                        getNextPokemons()
+                    }
                 }
             }
 
             is ResponseResource.Error -> {
-                val pokemons = pokemonState.exception
+                pokemonState.exception
             }
         }
     }
@@ -155,93 +175,114 @@ fun Search() {
 
     val isFocused = remember { mutableStateOf(true) }
 
-    val keyboardActions = KeyboardActions(
-        onSearch = {
-            keyboardController?.hide()
-        }
-    )
+    val keyboardActions = KeyboardActions(onSearch = {
+        keyboardController?.hide()
+    })
 
-    TextField(
-        value = searchQuery,
-        onValueChange = {
-            searchQuery = it
-        },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-            .onFocusChanged {
-                isFocused.value = it.isFocused
-            },
-        shape = RoundedCornerShape(30.dp),
-        label = {
-            Text(text = "Search")
-        },
-        leadingIcon = {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = "Search"
-            )
-        },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions.Default.copy(
-            imeAction = ImeAction.Search
-        ),
-        keyboardActions = keyboardActions,
-        colors = TextFieldDefaults.colors(
-            focusedIndicatorColor = Color.Transparent,
-            disabledIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
+    TextField(value = searchQuery, onValueChange = {
+        searchQuery = it
+    }, modifier = Modifier
+        .fillMaxWidth()
+        .padding(16.dp)
+        .onFocusChanged {
+            isFocused.value = it.isFocused
+        }, shape = RoundedCornerShape(30.dp), label = {
+        Text(text = "Search")
+    }, leadingIcon = {
+        Icon(
+            imageVector = Icons.Default.Search, contentDescription = "Search"
         )
+    }, singleLine = true, keyboardOptions = KeyboardOptions.Default.copy(
+        imeAction = ImeAction.Search
+    ), keyboardActions = keyboardActions, colors = TextFieldDefaults.colors(
+        focusedIndicatorColor = Color.Transparent,
+        disabledIndicatorColor = Color.Transparent,
+        unfocusedIndicatorColor = Color.Transparent,
+    )
     )
 }
 
 @Composable
 fun PokemonLazyGrid(
     navController: NavHostController,
-    pokemons: List<Pokemon>
+    pokemons: List<Pokemon>,
+    homeState: HomeState,
+    getNextPokemons: @Composable () -> Unit
 ) {
-    fun pokemonImageSizeHandler(pokemon: Pokemon): Int {
-        return if (pokemon.height <= 11) {
-            150
-        } else {
-            100
-        }
-    }
-
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-    ) {
-        items(pokemons.size) { index ->
-            Box(
-                modifier = Modifier
+    Column {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+        ) {
+            items(pokemons.size) { index ->
+                val pokemon = pokemons[index]
+                if (index == pokemons.size - 6 && !homeState.endReached && !homeState.bottomLoad) {
+                    getNextPokemons()
+                }
+                Box(modifier = Modifier
                     .fillMaxSize()
                     .height(150.dp)
                     .padding(8.dp)
                     .background(
-                        typePokemonColorHandler(pokemons[index].types[0].type),
+                        typePokemonColorHandler(pokemon.types[0].type),
                         RoundedCornerShape(20.dp)
                     )
                     .clip(MaterialTheme.shapes.medium)
                     .clickable {
                         navController.navigate(Screens.PokeScreen.name + "/$index")
+                    }) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                pokemon.name.replaceFirstChar { it.uppercase() },
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontSize = 22.sp
+                            )
+                            Text(
+                                text = "#" + String.format("%03d", pokemon.id),
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontSize = 18.sp
+                            )
+                        }
+                        Column(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .padding(top = 5.dp)
+                        ) {
+                            PokemonTypeTag(pokemon.types, 25)
+                        }
                     }
-            ) {
-                Text(
-                    pokemons[index].name.replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.padding(10.dp)
-                )
-                Image(
-                    painter = rememberAsyncImagePainter(
-                        pokemons[index].sprites.frontDefault,
-                        contentScale = ContentScale.FillHeight
-                    ),
-                    contentDescription = "${pokemons[index].name} Image",
-                    modifier = Modifier
-                        .size(100.dp)
-                        .align(Alignment.BottomEnd)
-                )
+
+                    Image(
+                        painter = rememberAsyncImagePainter(pokemon.sprites.frontDefault),
+                        contentDescription = "${pokemon.name} Image",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(100.dp)
+                            .align(Alignment.BottomEnd)
+                    )
+                }
+            }
+            item {
+                if (homeState.bottomLoad) {
+                    Row(
+                        horizontalArrangement = Arrangement.End,
+                        modifier = Modifier
+                            .offset(x = 25.dp)
+                            .fillMaxWidth()
+                            .padding(8.dp)
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
             }
         }
     }
@@ -252,8 +293,7 @@ fun PokemonLazyGrid(
 fun HomeScreenPreview() {
     KotlinPokedexTheme {
         HomeScreenUI(
-            rememberNavController(),
-            ResponseResource.Success(
+            rememberNavController(), ResponseResource.Success(
                 data = listOf(
                     Pokemon(
                         id = 1,
@@ -284,9 +324,8 @@ fun HomeScreenPreview() {
                             backShinyFemale = null,
                             frontShinyFemale = null,
                         ),
-                        species = Species(
-                            "https://pokeapi.co/api/v2/pokemon-species/1/",
-                            "bulbasaur"
+                        species = SpeciesUrl(
+                            "https://pokeapi.co/api/v2/pokemon-species/1/", "bulbasaur"
                         ),
                         moves = listOf(),
                         forms = listOf(Form("", "")),
@@ -296,8 +335,7 @@ fun HomeScreenPreview() {
                         isDefault = false,
                         baseExperience = 0,
                         locationAreaEncounters = "",
-                    ),
-                    Pokemon(
+                    ), Pokemon(
                         id = 1,
                         order = 1,
                         weight = 69,
@@ -326,9 +364,8 @@ fun HomeScreenPreview() {
                             backShinyFemale = null,
                             frontShinyFemale = null,
                         ),
-                        species = Species(
-                            "https://pokeapi.co/api/v2/pokemon-species/1/",
-                            "bulbasaur"
+                        species = SpeciesUrl(
+                            "https://pokeapi.co/api/v2/pokemon-species/1/", "bulbasaur"
                         ),
                         moves = listOf(),
                         forms = listOf(Form("", "")),
@@ -340,8 +377,8 @@ fun HomeScreenPreview() {
                         locationAreaEncounters = "",
                     )
                 )
-            )
-        )
+            ), homeState = HomeState()
+        ) {}
     }
 }
 
