@@ -2,7 +2,7 @@
 
 Description: I am using the pokeApi to create a pokemon list, with an infinity scrool, in the main screen we have te pokemon list, when we enter the pokemon details scren we have the image of that pokemon, a tab with informations about that pokemon, a tab with his status(hp, attack, defense, ...) and another tab with the evolutions of that pokemon. 
 
-Ojective: my objective with this project was to make my firts koltin app, to learn the basics of the language and to start my journey with native apps and class oriented programing.
+Ojective: my objective with this project was to make my first koltin app, to learn the basics of the language and to start my journey with native apps and class oriented programing.
 
 Tolls:
 - PokeApi (https://pokeapi.co/)
