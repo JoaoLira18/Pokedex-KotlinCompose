@@ -13,12 +13,14 @@ import com.example.kotlinpokedex.data.api.ResponseResource
 import com.example.kotlinpokedex.ui.screens.home.HomeScreen
 import com.example.kotlinpokedex.ui.screens.home.HomeScreenViewModel
 import com.example.kotlinpokedex.ui.screens.pokemon.PokeScreen
+import com.example.kotlinpokedex.ui.screens.pokemon.PokeScreenViewModel
 
 @Composable
 fun Navigation() {
 
     val navController = rememberNavController()
     val viewModel: HomeScreenViewModel = hiltViewModel()
+    val pokeViewModel: PokeScreenViewModel = hiltViewModel()
 
     NavHost(
         navController,
@@ -44,7 +46,7 @@ fun Navigation() {
             when (val result = pokemonState) {
                 is ResponseResource.Success -> {
                     val pokemonData = result.data[pokemonIndex]
-                    PokeScreen(pokemonData, navController)
+                    PokeScreen(pokemonData, navController, pokeViewModel)
                 }
                 is ResponseResource.Loading -> {
                     // Handle loading state

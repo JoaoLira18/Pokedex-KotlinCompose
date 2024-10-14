@@ -163,7 +163,7 @@ data class OfficialArtwork(
 @Parcelize
 data class Stats(
     val effort: Int,
-    val stats: StatsDetail,
+    val stat: StatsDetail,
     @SerializedName("base_stat") val baseStat: Int,
 ) : Parcelable
 

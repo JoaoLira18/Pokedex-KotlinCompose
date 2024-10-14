@@ -8,7 +8,7 @@ data class Species(
     val color: Color,
     @SerializedName("egg_groups") val eggGroups: List<EggGroup>,
     @SerializedName("evolution_chain") val evolutionChain: EvolutionChain,
-    @SerializedName("evolves_from_species") val evolvesFromSpecies: Any,
+    @SerializedName("evolves_from_species") val evolvesFromSpecies: EvolvesFrom?,
     @SerializedName("flavor_text_entries") val flavorTextEntries: List<FlavorTextEntry>,
     @SerializedName("form_descriptions") val formDescriptions: List<Any>,
     @SerializedName("forms_switchable") val formsSwitchable: Boolean,
@@ -16,7 +16,7 @@ data class Species(
     val genera: List<Genera>,
     val generation: Generation,
     @SerializedName("growth_rate") val growthRate: GrowthRate,
-    val habitat: Habitat,
+    val habitat: Habitat?,
     @SerializedName("has_gender_differences") val hasGenderDifferences: Boolean,
     @SerializedName("hatch_counter") val hatchCounter: Int,
     val id: Int,
@@ -33,6 +33,11 @@ data class Species(
 )
 
 data class Area(
+    val name: String,
+    val url: String
+)
+
+data class EvolvesFrom(
     val name: String,
     val url: String
 )

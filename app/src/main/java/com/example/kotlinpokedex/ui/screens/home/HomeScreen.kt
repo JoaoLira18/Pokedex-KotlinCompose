@@ -110,9 +110,10 @@ fun HomeScreenUI(
     getNextPokemons: @Composable () -> Unit
 ) {
     Scaffold(
-        topBar = {
-            Header()
-        }, modifier = Modifier.background(
+//        topBar = {
+//            Header()
+//        },
+        modifier = Modifier.background(
             MaterialTheme.colorScheme.background
         )
     ) { innerPadding ->
